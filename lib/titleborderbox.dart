@@ -13,7 +13,7 @@ class TitleBorderBox extends StatelessWidget {
     this.backgroundColor = Colors.white,
     this.borderRadius = 8.0,
     this.contentPadding = const EdgeInsets.all(16.0),
-    this.borderWidth = 1.5,
+    this.borderWidth = 1.0,
     this.titleStyle = const TextStyle(
       color: Colors.black54,
       fontSize: 16,
@@ -189,9 +189,23 @@ class TitledBorderPainter extends CustomPainter {
     // Position du texte (le titre)
     const double textLeftPosition = 20.0;
     const double textPadding = 4.0; // Espace autour du texte
-    const double titleVerticalPosition = 0;
 
-    // Dessiner le fond
+    // Ajustement pour aligner le trait sur les pixels (évite l'effet de flou "épais" du lissage)
+    // Cela simule un StrokeAlign.inside en décalant le tracé de la moitié de l'épaisseur vers l'intérieur
+    final double halfStroke = borderWidth / 2.0;
+
+    final double top = halfStroke;
+    final double left = halfStroke;
+    final double right = size.width - halfStroke;
+    final double bottom = size.height - halfStroke;
+
+    // Ajuster le rayon pour qu'il soit concentrique
+    final double adjRadius = (borderRadius - halfStroke).clamp(
+      0.0,
+      borderRadius,
+    );
+
+    // Dessiner le fond (reste pleine taille)
     final RRect backgroundRRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, size.width, size.height),
       Radius.circular(borderRadius),
@@ -200,47 +214,44 @@ class TitledBorderPainter extends CustomPainter {
 
     // Dessiner la bordure avec un espace pour le texte
     final Path borderPath = Path()
-      // Commencer depuis le coin supérieur gauche
-      ..moveTo(borderRadius, titleVerticalPosition)
+      // Commencer après le coin supérieur gauche
+      ..moveTo(left + adjRadius, top)
       // Ligne jusqu'au début de l'espace pour le texte
-      ..lineTo(textLeftPosition - textPadding, titleVerticalPosition);
+      ..lineTo(textLeftPosition - textPadding, top);
 
     if (title != null && title!.isNotEmpty) {
       // Sauter l'espace du texte
-      borderPath.moveTo(
-        textLeftPosition + textWidth + textPadding,
-        titleVerticalPosition,
-      );
+      borderPath.moveTo(textLeftPosition + textWidth + textPadding, top);
     }
 
     // Ligne jusqu'au coin supérieur droit
     borderPath
-      ..lineTo(size.width - borderRadius, titleVerticalPosition)
+      ..lineTo(right - adjRadius, top)
       // Arc pour le coin supérieur droit
       ..arcToPoint(
-        Offset(size.width, borderRadius),
-        radius: Radius.circular(borderRadius),
+        Offset(right, top + adjRadius),
+        radius: Radius.circular(adjRadius),
       )
       // Ligne droite descendante côté droit
-      ..lineTo(size.width, size.height - borderRadius)
+      ..lineTo(right, bottom - adjRadius)
       // Arc pour le coin inférieur droit
       ..arcToPoint(
-        Offset(size.width - borderRadius, size.height),
-        radius: Radius.circular(borderRadius),
+        Offset(right - adjRadius, bottom),
+        radius: Radius.circular(adjRadius),
       )
       // Ligne du bas
-      ..lineTo(borderRadius, size.height)
+      ..lineTo(left + adjRadius, bottom)
       // Arc pour le coin inférieur gauche
       ..arcToPoint(
-        Offset(0, size.height - borderRadius),
-        radius: Radius.circular(borderRadius),
+        Offset(left, bottom - adjRadius),
+        radius: Radius.circular(adjRadius),
       )
       // Ligne gauche ascendante
-      ..lineTo(0, borderRadius)
+      ..lineTo(left, top + adjRadius)
       // Arc pour le coin supérieur gauche
       ..arcToPoint(
-        Offset(borderRadius, titleVerticalPosition),
-        radius: Radius.circular(borderRadius),
+        Offset(left + adjRadius, top),
+        radius: Radius.circular(adjRadius),
       );
 
     if (borderPaint != null) {
@@ -252,12 +263,17 @@ class TitledBorderPainter extends CustomPainter {
 
     double currentX = textLeftPosition;
 
+    // Le centre du texte s'aligne sur la ligne supérieure (top)
+    final double textVerticalBaseline = top;
+
     // Dessiner l'icône si elle existe
     if (icon != null) {
-      // Obtenir les informations de l'icône
       final IconData iconData = icon!.icon!;
       final Color iconColor = icon!.color ?? titleStyle.color!;
       final double iconSize = icon!.size ?? 20.0;
+
+      // Centrer l'icône verticalement par rapport à la ligne
+      final double iconTop = textVerticalBaseline - iconSize / 2.0;
 
       TextPainter(
           text: TextSpan(
@@ -271,21 +287,20 @@ class TitledBorderPainter extends CustomPainter {
           textDirection: TextDirection.ltr,
         )
         ..layout()
-        ..paint(
-          canvas,
-          Offset(currentX, -textHeight / 2 + (textHeight - iconSize) / 2),
-        );
+        ..paint(canvas, Offset(currentX, iconTop));
 
-      // Mettre à jour la position X pour le texte
       currentX += iconSize + iconSpacing;
     }
 
     // Dessiner le texte
     final TextSpan textSpan = TextSpan(text: title, style: titleStyle);
 
+    // Centrer le texte verticalement par rapport à la ligne
+    final double textTop = textVerticalBaseline - textHeight / 2.0;
+
     TextPainter(text: textSpan, textDirection: TextDirection.ltr)
       ..layout()
-      ..paint(canvas, Offset(currentX, -textHeight / 2));
+      ..paint(canvas, Offset(currentX, textTop));
   }
 
   @override
