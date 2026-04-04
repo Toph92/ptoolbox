@@ -3,6 +3,7 @@
 
 export 'dialogs.dart';
 export 'extensions.dart';
+export 'pcalendar.dart';
 export 'titleborderbox.dart';
 export 'utils.dart'; // can be used without Flutter library
 export 'widgets.dart';

@@ -15,6 +15,12 @@
             "cwd": "examples/dialogs",
             "request": "launch",
             "type": "dart"
+        },
+        {
+            "name": "Calendar",
+            "cwd": "examples/calendar",
+            "request": "launch",
+            "type": "dart"
         }
     ]
 }
