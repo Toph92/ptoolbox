@@ -80,7 +80,10 @@ class ExamplesPage extends StatelessWidget {
                       child: Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Colors.orange.shade50, Colors.orange.shade200],
+                            colors: [
+                              Colors.orange.shade50,
+                              Colors.orange.shade200,
+                            ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -149,15 +152,34 @@ class ExamplesPage extends StatelessWidget {
 
             const _SectionTitle('ContainerBorder — avec bordure complète'),
             const SizedBox(height: 8),
+            const Text(
+              'overlapBorder: false (défaut) — le liseré reste confiné à '
+              "l'intérieur du border, qui s'affiche donc en continu tout "
+              'autour.',
+            ),
+            const SizedBox(height: 8),
             ContainerBorder(
               side: CardBorderSide.top,
               color: Colors.amber.shade800,
               backgroundColor: Colors.amber.shade50,
-              border: Border.all(color: Colors.amber.shade200),
+              border: Border.all(color: Colors.blue, width: 4),
               padding: const EdgeInsets.all(16),
-              child: const Text(
-                'Combine le liseré coloré avec un contour complet',
-              ),
+              child: const Text('overlapBorder: false'),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'overlapBorder: true — le liseré est peint par-dessus le '
+              'border et le recouvre sur son côté.',
+            ),
+            const SizedBox(height: 8),
+            ContainerBorder(
+              side: CardBorderSide.top,
+              color: Colors.amber.shade800,
+              backgroundColor: Colors.amber.shade50,
+              border: Border.all(color: Colors.blue, width: 4),
+              overlapBorder: true,
+              padding: const EdgeInsets.all(16),
+              child: const Text('overlapBorder: true'),
             ),
             const SizedBox(height: 24),
 

@@ -22,6 +22,7 @@ class ContainerBorder extends StatelessWidget {
     this.borderRadius = const BorderRadius.all(Radius.circular(12)),
     this.backgroundColor,
     this.border,
+    this.overlapBorder = false,
     this.padding = EdgeInsets.zero,
   }) : assert(
          color == null || colors == null,
@@ -58,34 +59,113 @@ class ContainerBorder extends StatelessWidget {
   /// Fill behind the child. Defaults to the theme's [ThemeData.cardColor].
   final Color? backgroundColor;
 
-  /// Optional full outline border, passed straight to the [BoxDecoration] just
-  /// like `Container(decoration: BoxDecoration(border: ...))`. This draws in
-  /// addition to the accent stripe. Note that combining a border with
-  /// [borderRadius] requires a uniform border (e.g. [Border.all]).
+  /// Optional full outline border, drawn in addition to the accent stripe.
+  /// Note that combining a border with [borderRadius] requires a uniform
+  /// border (e.g. [Border.all]).
+  ///
+  /// By default (see [overlapBorder]) the accent stripe is confined inside
+  /// this border and never covers it.
   final BoxBorder? border;
+
+  /// Whether the accent stripe should be painted over [border] instead of
+  /// being confined inside it.
+  ///
+  /// When `false` (the default), [ContainerBorder] is built on a plain
+  /// [Container], which — like any widget using [BoxDecoration.border] —
+  /// automatically reserves [border]'s width as padding for its child. Since
+  /// the accent stripe is painted as part of that child, it ends up inset by
+  /// that same amount and never reaches [border]: the outline stays fully
+  /// visible all around, unbroken by the stripe.
+  ///
+  /// When `true`, the stripe is painted in the same layer as the fill and
+  /// [border], on top of both, so it visually overlaps/covers [border] on
+  /// its [side] — e.g. for a full outline that gets "interrupted" by a
+  /// colored accent on one edge. Has no effect if [border] is null.
+  final bool overlapBorder;
+
   final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: backgroundColor ?? Theme.of(context).cardColor,
-        borderRadius: borderRadius,
-        border: border,
-      ),
+    final effectiveColors = colors ?? <Color>[color ?? Colors.green];
+    final effectiveBackground = backgroundColor ?? Theme.of(context).cardColor;
+
+    if (!overlapBorder) {
+      return Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: effectiveBackground,
+          borderRadius: borderRadius,
+          border: border,
+        ),
+        child: CustomPaint(
+          foregroundPainter: EdgeBorderPainter(
+            side: side,
+            colors: effectiveColors,
+            thickness: thickness,
+            borderRadius: borderRadius,
+          ),
+          child: Padding(
+            padding: padding,
+            child: child,
+          ),
+        ),
+      );
+    }
+
+    // overlapBorder: paint fill + border + stripe in the same CustomPaint,
+    // in that order, so the stripe (foregroundPainter, painted last) covers
+    // border on its side — instead of relying on Container, which would
+    // otherwise reserve border's width as padding around the stripe too.
+    return ClipRRect(
+      borderRadius: borderRadius,
       child: CustomPaint(
+        painter: _FillAndBorderPainter(
+          color: effectiveBackground,
+          border: border,
+          borderRadius: borderRadius,
+        ),
         foregroundPainter: EdgeBorderPainter(
           side: side,
-          colors: colors ?? <Color>[color ?? Colors.green],
+          colors: effectiveColors,
           thickness: thickness,
           borderRadius: borderRadius,
         ),
         child: Padding(
-          padding: padding,
+          padding: (border?.dimensions ?? EdgeInsets.zero).add(padding),
           child: child,
         ),
       ),
     );
   }
+}
+
+/// Paints the background fill and, if set, [border] — used by
+/// [ContainerBorder] instead of [BoxDecoration] when [ContainerBorder.overlapBorder]
+/// is `true`, so [border] is drawn on the same [CustomPaint] as the accent
+/// stripe (painted afterwards, on top) rather than by a separate
+/// [Container] decoration that would reserve its own padding.
+class _FillAndBorderPainter extends CustomPainter {
+  _FillAndBorderPainter({
+    required this.color,
+    required this.border,
+    required this.borderRadius,
+  });
+
+  final Color color;
+  final BoxBorder? border;
+  final BorderRadius borderRadius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRRect(borderRadius.toRRect(rect), Paint()..color = color);
+    border?.paint(canvas, rect, borderRadius: borderRadius);
+  }
+
+  @override
+  bool shouldRepaint(_FillAndBorderPainter old) =>
+      color != old.color ||
+      border != old.border ||
+      borderRadius != old.borderRadius;
 }
