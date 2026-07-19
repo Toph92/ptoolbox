@@ -69,10 +69,29 @@ class ExamplesPage extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _CardBorderDemo(
-                    side: CardBorderSide.right,
-                    color: Colors.orange,
-                    label: 'right',
+                  child: Card(
+                    margin: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: CardBorder(
+                      side: CardBorderSide.right,
+                      color: Colors.orange,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.orange.shade50, Colors.orange.shade200],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text('right\navec dégradé'),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
